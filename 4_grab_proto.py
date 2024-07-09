@@ -171,11 +171,8 @@ for line in lines:
         
             if duplicate_positions != {}:
                 for candidate in combinations:
-                    elements = []
-                    
-                    
-                    
                     for atompositions in duplicate_positions.values():
+                        elements = []
                         for i in atompositions:
                             elements.append(candidate[i]) 
                     if len(set(elements)) == 1:
