@@ -95,7 +95,6 @@ for line in lines:
     #oxstates=[2,2,-2]   #REMOVE ME
     print("oxstates = ", old_oxstates)   
     
-    
 #----Oxdiation states of cations and anions 2 search 
 
     oxstates_cations2dec=[]
@@ -149,20 +148,51 @@ for line in lines:
                     match_ox[atomposition].append(ANIONS2DECORATE[anionindex])
 
 #Complete decoration 
-    empty = True
+    notempty = True
     for i in range(NARY):
         if len(match_ox[i]) == 0:
-            empty = False 
+            notempty = False 
             print(f'No new ion for position {i}')
     print("Match oxdiation states = ", match_ox)
 
-
-
-
-
-
-
-
+#Combinations 
+    if notempty:
+        combinations = list(itertools.product(*match_ox))
+        print("Combinations = ", combinations)
+    
+        if len(set(old_oxstates)) != len(old_oxstates):
+            ox_atompositions = {}
+            for atomposition, ox in enumerate(old_oxstates):
+                if ox not in ox_atompositions:
+                    ox_atompositions[ox] = []
+                ox_atompositions[ox].append(atomposition)
+            duplicate_positions = {ox: atompositions for ox, atompositions in ox_atompositions.items() if len(atompositions) > 1}
+            print("duplicate_positions = ", duplicate_positions)
+        
+            if duplicate_positions != {}:
+                for candidate in combinations:
+                    elements = []
+                    
+                    
+                    
+                    for atompositions in duplicate_positions.values():
+                        for i in atompositions:
+                            elements.append(candidate[i]) 
+                    if len(set(elements)) == 1:
+                        combinations.remove(candidate)
+                        print("repeated element = ", candidate)
+            print("remove repeated elements = ", combinations)
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
     negs = 0
     pos = 0
     for i in oxstates: #Iterate through each oxidation state (only one - can't do multi valence)
