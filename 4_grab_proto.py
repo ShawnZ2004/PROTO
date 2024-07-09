@@ -155,7 +155,8 @@ for line in lines:
             print(f'No new ion for position {i}')
     print("Match oxdiation states = ", match_ox)
 
-#Combinations 
+#---Combinations 
+    proto_dec_set=set()
     if notempty:
         combinations = list(itertools.product(*match_ox))
         print("Combinations = ", combinations)
@@ -169,391 +170,129 @@ for line in lines:
             duplicate_positions = {ox: atompositions for ox, atompositions in ox_atompositions.items() if len(atompositions) > 1}
             print("duplicate_positions = ", duplicate_positions)
         
+            deletionlist = [] 
             if duplicate_positions != {}:
                 for candidate in combinations:
+                    elements = []
                     for atompositions in duplicate_positions.values():
-                        elements = []
                         for i in atompositions:
                             elements.append(candidate[i]) 
-                    if len(set(elements)) == 1:
-                        combinations.remove(candidate)
-                        print("repeated element = ", candidate)
+                        if len(set(elements)) == 1:
+                            deletionlist.append(candidate)
+                            print("repeated element = ", candidate)
+            for todel in deletionlist:
+                combinations.remove(todel)
             print("remove repeated elements = ", combinations)
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    negs = 0
-    pos = 0
-    for i in oxstates: #Iterate through each oxidation state (only one - can't do multi valence)
-        if i < 0: #Negative oxidation state = anion
-            negs += 1
-    pos = NARY - negs #Number or cations
-    #if negs > 1:
-        #print("two negs!!!") #Only for three elements (two anions) 
-    #Make multi-valent ions 
-    if len(oxstates)!=NARY: #Number of oxidation states -- one for each element
-        sys.exit("len(oxstates)!=NARY")
 
-
-
-    #get index of the anion, "O" or "I" in most cases
-    anion=""
-    cation=""
-    cation_index=""
-    for e in ANIONS2SEARCH: #Iterate through the anions needed to be searched 
-        if e in elements: #Anion2search is part of the natural list of elements
-            anion=e #The element in prototype compound that is being searched
-            break 
-    if negs > 1:
-        for ox in oxstates:
-            if ox > 0:
-                index = oxstates.index(ox) #Index of the positive oxdiation state - cation 
-        cation=elements[index]
-        cation_index = index
-    if not anion: #No anion in the search that matches the prototype
-        print("uh oh")
-        sys.exit("could not identify anion")
-    if DEBUG: print("cation", cation)
-    #print("anion " + anion)
-    anion_index=elements.index(anion) #For only one anion 
-    #print("index " + str(anion_index))
-    anion_let=chr(ord("A")+anion_index) #Decoration letter 
-    if DEBUG: print("anion="+str(anion),"anion_index="+str(anion_index),"anion_let="+str(anion_let))
-    other_index=[ i for i in range(NARY) if i!=anion_index ] #Other indexes of elements that are not the anion of interest
-    other_let=[ chr(ord("A")+i) for i in other_index ] #Other element letters (except for ABC on the anion)
-    if DEBUG: print("other_index="+str(other_index),"other_let="+str(other_let))
-    
-    #get new anion for redecoration
-    anion_new=ANIONS2DECORATE[0] #Replace with anion2decorate 
-    if DEBUG: print("anion_new="+str(anion_new)) 
-
-    proto_dec_set=set() #will save the unique part of the proto command
-    #go through all possible N-ARY-1 combinations of cations
-    if DEBUG: print("proto dec", proto_dec_set)
-    
-    #I need all possible combinations of anions of the right length (with oxygen always included)
-    #anion_combos = list(itertools.combinations(ANIONS2DECORATE[:negs],negs))
-    #print(anion_combos)
-
-    cation_combos = list(itertools.combinations(CATIONS2DECORATE, NARY-negs)) #Number of cation combinations for elements in cations2decorate (3-number of anions)
-    #print(cation_combos)
-    
-    anion_combos = list(itertools.combinations(ANIONS2DECORATE, negs)) #Number of anion combinations 
-    combos = []
-    for com in cation_combos:
-        for cam in anion_combos:
-            fin = com + cam #All cation + anion combinations from elements to decorate
-            #fin = com + tuple(ANIONS2DECORATE[:negs])
-            #fin = com + anion_combo
-            combos.append(fin) 
-    #print(combos)
-
-    #combos = list(itertools.product(anion_combos,cation_combos))
-    #print(combos)
-
-    #for combo in list(itertools.combinations(CATIONS2DECORATE,NARY-negs)):
-    for combo in combos:
-        #print(combo)
-        cations_new=list(combo[:(NARY-negs)]) #Cations in the combo
-        #anions_new=list(ANIONS2DECORATE[:negs])
-        anions_new = list(combo[NARY-negs:]) #Anions in the combo 
-        #print(anions_new)
-        oxstates_possible_anion=[] 
-        
-        
-        #anions_new=list(itertools.combinations(ANIONS2DECORATE, negs))
-        #print(anions_new)
-        #for e in ANIONS2DECORATE[:negs]:
-        for e in anions_new: #Iterate through new decorated anions 
-            #print(e)
-            oxstates_anion= [i for i in OXIDATION_STATES[e] if i < 0] #Dictionary of element's oxidation states -- gets oxidation states of the new anion 
-            if DEBUG: print("oxstates_anion", oxstates_anion)
-            oxstates_possible_anion.append(oxstates_anion)
-        #print(oxstates_possible_anion)
-        #cations_new=["N","S"]   #REMOVE ME
-        
-        if DEBUG: print("cations_new="+str(cations_new))
-        
-        #get all possible combinations of oxidation states between cations
-        oxstates_possible_cations=[]
-        for e in cations_new:
-            if e not in OXIDATION_STATES.keys():
-                print("no oxidation states available for e="+str(e)+", skipping\n")
-                break
-
-            #need to find ONLY positive oxstates for cation
-            #here's a good example: aflow-dev --proto=ABC_hR3_160_a_a_a-001.BAC:Fe:Mn:O [decv=['BAC']; decv_dup=['BAC', 'BCA']] (new) vs. aflow-dev --proto=ABC_hR3_160_a_a_a-001.ABC:C:O:S (std)
-            #this works if Fe is -2, we are not interested in this case
-            #otherwise fix the test below
-            #oxstates_possible_cations.append(OXIDATION_STATES[e])
-            #oxstates_cation=[ i for i in OXIDATION_STATES[e] if i>=0 ]
-            oxstates_cation=[i for i in OXIDATION_STATES[e] if i > 0] #Access the oxidation states of the new cations decorated
-            if DEBUG: print("oxstates_cation", oxstates_cation)
-
-            if not oxstates_cation: #No oxidation state for element that is positive
-                if DEBUG: print("no positive oxidation states for e="+str(e)+", skipping")
-                break
-            oxstates_possible_cations.append(oxstates_cation)
-        if len(oxstates_possible_cations)!=len(cations_new): continue #ISSUE: Only one possible oxidation state for the cation?
-        if DEBUG: print("oxstates_possible_cations="+str(oxstates_possible_cations))
-        #Cation oxidation state combinations 
-        oxstates_cations_combos=list(itertools.product(*oxstates_possible_cations)) #Cartesian product, or what I call "enumerations"
-        if DEBUG: print("oxstates_cations_combos="+str(oxstates_cations_combos))
-        #Anion oxidation state combinations
-        oxstates_anions_combos=list(itertools.product(*oxstates_possible_anion))
-        #if negs > 1:
-            #print("oxstates_anions_combos="+str(oxstates_anions_combos))
-        #find an oxidation-state set that matches the original proto+chemistry, then get all relevant decorations (.ABC...)
-        if DEBUG: print("oxstates="+str(oxstates),"anion_index="+str(anion_index))
-        
-        _oxstates_new=[oxstates[anion_index]] #List of anion oxidation states 
-        #if negs >1:
-            #_oxstates_new=[oxstates[cation_index]]
-        if DEBUG: print("_oxstates_new="+str(_oxstates_new))
-
-        oxstates_sorted=sorted(oxstates)
-        oxstates_all = [] #Oxidation state combinations of cation and anion 
-        for com in oxstates_cations_combos:
-            for cam in oxstates_anions_combos:
-                fin = com + cam
-                oxstates_all.append(fin)
-
-        #oxstates_all = list(itertools.product(oxstates_cations_combos,oxstates_anions_combos))
-        #print("oxos", oxstates_all)
-        
-        #for combo in oxstates_cations_combos:
-        for combo in oxstates_all:
-            
-            #oxstates_new=list(_oxstates_new)+list(combo)
-            oxstates_new=combo
-            #print(oxstates_new)
-            """
-            if negs >1:
-                for combo2 in oxstates_anions_combos:
-                    oxstates_new=list(combo)+list(combo2)
-                    print("oxstates_new(possible)="+str(oxstates_new)+"\n")
-            
-                    if oxstates_sorted==sorted(oxstates_new):   #check sorted, this is a super easy way to see that we have the right oxidation states in the set
-                    #ok, we have a match of oxidation states, now the tricky part, figure out the right decorations (ABC)
-                        elements_new=anions_new+cations_new
-                        print("elements_new(pre)="+str(elements_new))
-                        elements_new,oxstates_new=zip(*sorted(zip(elements_new,oxstates_new)))    #sort two lists together by first list (elements_new)
-                        print("elements_new(post)="+str(elements_new))
-                        print("oxstates_new(works)="+str(oxstates_new))
-                        _decv=[]
-                        dec_all=list(itertools.permutations([ chr(ord("A")+i) for i in range(NARY) ]))
-                        for dec in dec_all:
-                            print("dec="+str(dec))
-
-                            #THE MOST TRICKY PART
-                            #if we have decoration BCA, we have two options for converting this into an integer
-                            #we could translate the letters RAW: B->1; C->2; A->0: 120 #option 1
-                            #or we could look at each position and ask where it's respective letter is:
-                            #position 0: where is A? at position 2
-                            #position 1: where is B? at position 0
-                            #position 2: where is C? at position 1; 
-                            #thus 201    #option 2
-                            #option 2 is the one coded in aflow, very tricky...
-                            dec_int1=[ ord(i)-65 for i in dec ] #option1
-                            dec_int2=[]
-                            for il,let in enumerate(dec):
-                                dec_int2.append(dec.index(chr(ord("A")+il)))  #option2, amazingly tricky
-                            if(dec_int1!=dec_int2):
-                                if DEBUG: print("dec_int1="+str(dec_int1),"dec_int2="+str(dec_int2))
-                                #sys.exit()
-                            dec_int=list(dec_int2)  #the one coded in aflow
-                            print("dec="+str(dec),"dec_int="+str(dec_int))
-                            _dec_int,__oxstates_new=zip(*sorted(zip(dec_int,oxstates_new)))    #sort two lists together by first list (_dec_int), be careful: _oxstates_new is used above
-                            print("__oxstates_new="+str(__oxstates_new))
-
-                            if list(oxstates)==list(__oxstates_new):    #we get the required flipping, use this decoration (or a duplicate one that is more alphabetic)
-                                print("WORKS")
-                                _decv.append("".join(list(dec)))
-                        print("_decv="+str(_decv))
-                        with open(DIR_DECORATIONS+"/decorations_"+label+".json","r") as fin:
-                            data=json.load(fin)
-                        decorations=data["atom_decorations_equivalent"]
-                        #_decv=['ACB', 'BCA']
-                        #decorations=[['ABC', 'BAC'], ['CAB', 'ACB'], ['BCA', 'CBA']]
-                        #decorations=[['ABC', 'BAC'], ['BCA', 'ACB'], ['CAB', 'CBA']] #REMOVE ME, this should only give one dec
-                        print("decorations="+str(decorations))                
-                        decv=set()
-                        decv_dup=[]
-                        for dec in _decv:
-                            print("dec="+str(dec))
-                            for _dset in decorations:
-                                if DEBUG: print("_dset="+str(_dset))
-                                dset=sorted(_dset)
-                                if DEBUG: print("dset="+str(dset))
-                                dec_canonical=dset[0]
-                                if dec in dset:
-                                    if DEBUG: print("FOUND")
-                                    decv.add(dec_canonical)
-                                    decv_dup.append(dec)
-                        decv=list(decv)
-                        print("decv="+str(decv))
-                        print("decv_dup="+str(decv_dup))  #the duplicate is the non-alphabetic option that should best match the original proto+chemistry, keep so we can test the atom positions easily
-
-                        for dec in decv:
-                            _proto_dec=label+"."+"".join(dec)+":"+":".join(elements_new)
-                            print(_proto_dec)
-                            proto_dec_set.add(_proto_dec)
-                            command1=AFLOW_BIN+" --proto="+_proto_dec
-                            print("RUN: "+command1)
-                            command2=AFLOW_BIN+" --proto="+str(label)+".ABC:"+":".join(elements)
-                            print("COMPARE TO: "+command2+"\n")
- 
-
-            print("oxstates_new(possible)="+str(oxstates_new)+"\n")
-            
-            """
-            if oxstates_sorted==sorted(oxstates_new):   #check sorted, this is a super easy way to see that we have the right oxidation states in the set
-                #ok, we have a match of oxidation states, now the tricky part, figure out the right decorations (ABC)
-                elements_new=cations_new + anions_new
-                print("elements_new(pre)="+str(elements_new))
-                elements_new,oxstates_new=zip(*sorted(zip(elements_new,oxstates_new)))    #sort two lists together by first list (elements_new)
-                print("elements_new(post)="+str(elements_new))
-                print("oxstates_new(works)="+str(oxstates_new))
-
-                #[doesn't work if we have duplicates]#the tricky bit
-                #[doesn't work if we have duplicates]dec_indices=[]
-                #[doesn't work if we have duplicates]for i,oxnew in enumerate(oxstates_new):
-                #[doesn't work if we have duplicates]    for j,ox in enumerate(oxstates):
-                #[doesn't work if we have duplicates]        if oxstates_new[i]==oxstates[j]:
-                #[doesn't work if we have duplicates]            dec_indices.append(j)
-                #[doesn't work if we have duplicates]            break
-                #[doesn't work if we have duplicates]dec_new=[ chr(ord("A")+i) for i in dec_indices ]
-                #[doesn't work if we have duplicates]if DEBUG: print("dec_new="+str(dec_new))
-                
-                #go through all possible decorations, find the one that sorts the right way
-                #must be done this way, otherwise you might miss duplicates that arise from cases like ["Ca","Mg"] which are both +2
-                _decv=[]
-                dec_all=list(itertools.permutations([ chr(ord("A")+i) for i in range(NARY) ])) #Get all permutations (order matters) for element decorations 
-                for dec in dec_all:
-                    #print("dec="+str(dec))
-
-                    #THE MOST TRICKY PART
-                    #if we have decoration BCA, we have two options for converting this into an integer
-                    #we could translate the letters RAW: B->1; C->2; A->0: 120 #option 1
-                    #or we could look at each position and ask where it's respective letter is:
-                    #position 0: where is A? at position 2
-                    #position 1: where is B? at position 0
-                    #position 2: where is C? at position 1; 
-                    #thus 201    #option 2
-                    #option 2 is the one coded in aflow, very tricky...
-                    dec_int1=[ ord(i)-65 for i in dec ] #option1 (order of ABC) #The letter as a number 
-                    dec_int2=[]
-                    for il,let in enumerate(dec):
-                        dec_int2.append(dec.index(chr(ord("A")+il)))  #option2, amazingly tricky
-                    if(dec_int1!=dec_int2):
-                        print("dec_int1="+str(dec_int1),"dec_int2="+str(dec_int2))
-                        #sys.exit()
-                    dec_int=list(dec_int2)  #the one coded in aflow
+#---Decorations
+        _decv=[]
+        dec_all=list(itertools.permutations([ chr(ord("A")+i) for i in range(NARY) ]))
+        for dec in dec_all:
+            dec_int1=[ ord(i)-65 for i in dec ]
+            dec_int2=[]
+            for il,let in enumerate(dec):
+                dec_int2.append(dec.index(chr(ord("A")+il)))  #option2, amazingly tricky
+            if(dec_int1!=dec_int2):
+                print("dec_int1="+str(dec_int1),"dec_int2="+str(dec_int2))
+            dec_int=list(dec_int2)  #the one coded in aflow
                     #print("dec="+str(dec),"dec_int="+str(dec_int))
-                    _dec_int,__oxstates_new=zip(*sorted(zip(dec_int,oxstates_new)))    #sort two lists together by first list (_dec_int), be careful: _oxstates_new is used above
-                    print("__oxstates_new="+str(__oxstates_new))
+            _dec_int,__oxstates_new=zip(*sorted(zip(dec_int,old_oxstates)))    #sort two lists together by first list (_dec_int), be careful: _oxstates_new is used above
+            print("__oxstates_new="+str(__oxstates_new))
 
-                    if list(oxstates)==list(__oxstates_new):    #we get the required flipping, use this decoration (or a duplicate one that is more alphabetic)
-                        print("WORKS")
-                        _decv.append("".join(list(dec))) #Decoration order coirrect
+            if list(old_oxstates)==list(    ):    #we get the required flipping, use this decoration (or a duplicate one that is more alphabetic)
+                print("WORKS")
+                _decv.append("".join(list(dec)))
                 #print("_decv="+str(_decv))
         
                 #we have our decorations, but we need to find the equivalent decoration that is the most "alphabetical", use aflow
                 #decorations_AB2C_hP12_152_a_c_b-001.json
                 #label="ABC2_hR4_166_a_b_c-003"  #REMOVE ME
-                with open(DIR_DECORATIONS+"/decorations_"+label+".json","r") as fin: #Aflow decoration file
-                    data=json.load(fin)
-                decorations=data["atom_decorations_equivalent"]
+            with open(DIR_DECORATIONS+"/decorations_"+label+".json","r") as fin:
+                data=json.load(fin)
+            decorations=data["atom_decorations_equivalent"]
                 #_decv=['ACB', 'BCA']
                 #decorations=[['ABC', 'BAC'], ['CAB', 'ACB'], ['BCA', 'CBA']]
                 #decorations=[['ABC', 'BAC'], ['BCA', 'ACB'], ['CAB', 'CBA']] #REMOVE ME, this should only give one dec
-                if DEBUG: print("decorations="+str(decorations))                
-                decv=set()
-                decv_dup=[]
-                for dec in _decv: #Decoration order 
-                    if DEBUG: print("dec="+str(dec))
-                    for _dset in decorations: #All combinations
-                        if DEBUG: print("_dset="+str(_dset))
-                        dset=sorted(_dset)
-                        if DEBUG: print("dset="+str(dset))
-                        dec_canonical=dset[0]
-                        if dec in dset:
-                            if DEBUG: print("FOUND")
-                            decv.add(dec_canonical)
-                            decv_dup.append(dec)
-                decv=list(decv)
-                if DEBUG: print("decv="+str(decv))
-                if DEBUG: print("decv_dup="+str(decv_dup))  #the duplicate is the non-alphabetic option that should best match the original proto+chemistry, keep so we can test the atom positions easily
+            if DEBUG: print("decorations="+str(decorations))                
+            decv=set()
+            decv_dup=[]
+            for dec in _decv:
+                if DEBUG: print("dec="+str(dec))
+                for _dset in decorations:
+                    if DEBUG: print("_dset="+str(_dset))
+                    dset=sorted(_dset)
+                    if DEBUG: print("dset="+str(dset))
+                    dec_canonical=dset[0]
+                    if dec in dset:
+                        if DEBUG: print("FOUND")
+                        decv.add(dec_canonical)
+                        decv_dup.append(dec)
+            decv=list(decv)
+            if DEBUG: print("decv="+str(decv))
+            if DEBUG: print("decv_dup="+str(decv_dup))  #the duplicate is the non-alphabetic option that should best match the original proto+chemistry, keep so we can test the atom positions easily
 
-                for dec in decv:
-                    _proto_dec=label+"."+"".join(dec)+":"+":".join(elements_new)
-                    print(_proto_dec)
-                    proto_dec_set.add(_proto_dec)
-                    command1=AFLOW_BIN+" --proto="+_proto_dec
-                    print("RUN: "+command1)
-                    command2=AFLOW_BIN+" --proto="+str(label)+".ABC:"+":".join(elements)
-                    print("COMPARE TO: "+command2+"\n")
+     
+            for dec in decv:
+                _proto_dec=label+"."+"".join(dec)+":"+":".join(elements_new)
+                print(_proto_dec)
+                proto_dec_set.add(_proto_dec)
+                command1=AFLOW_BIN+" --proto="+_proto_dec
+                print("RUN: "+command1)
+                command2=AFLOW_BIN+" --proto="+str(label)+".ABC:"+":".join(elements)
+                print("COMPARE TO: "+command2+"\n")
 
                     #create all of the non-alphabetical decorations so we can test to see if we get the right atom counts and atom positions for the anion (unit test)
-                    if False:
-                        out2,err2=issue_command(command2)
-                        xstr2=structure(POSCAR_Lines=out2.splitlines())
+                if False:
+                    out2,err2=issue_command(command2)
+                    xstr2=structure(POSCAR_Lines=out2.splitlines())
                         #print(out2,err2,xstr2)
-                        for dec_dup in decv_dup:
-                            _proto_dec_dup=label+"."+"".join(dec_dup)+":"+":".join(elements_new)
-                            command1_dup=AFLOW_BIN+" --proto="+_proto_dec_dup
+                    for dec_dup in decv_dup:
+                        _proto_dec_dup=label+"."+"".join(dec_dup)+":"+":".join(elements_new)
+                        command1_dup=AFLOW_BIN+" --proto="+_proto_dec_dup
                             #if(command1!=command1_dup): 
                             #print("RUN(dup): "+command1_dup+"\n")
 
-                            out1,err1=issue_command(command1_dup)
-                            xstr1=structure(POSCAR_Lines=out1.splitlines())
-                            if DEBUG: print(out1) #xstr1)
-                            if DEBUG: print(out2) #xstr2)
-                            _O_index=-1
-                            for i,s in enumerate(xstr1.species):
+                        out1,err1=issue_command(command1_dup)
+                        xstr1=structure(POSCAR_Lines=out1.splitlines())
+                        if DEBUG: print(out1) #xstr1)
+                        if DEBUG: print(out2) #xstr2)
+                        _O_index=-1
+                        for i,s in enumerate(xstr1.species):
                                 #if s==anion_new: #should be from ANIONS2DECORATE #"O":
-                                if s in ANIONS2DECORATE:
-                                    _O_index=i
-                                    break
-                            if _O_index==-1:
-                                sys.exit("_O_index not found")
-                            _anion_index=-1
-                            for i,s in enumerate(xstr2.species):
-                                if s in anion:  #should be from ANIONS2SEARCH
-                                    _anion_index=i
-                                    break
-                            if _anion_index==-1:
-                                sys.exit("_anion_index not found")
-                            if DEBUG: print("_O_index="+str(_O_index)+", num_each_type="+str(xstr1.num_each_type[_O_index]))
-                            if DEBUG: print("_anion_index="+str(_anion_index)+", num_each_type="+str(xstr2.num_each_type[_anion_index]))
-                            if xstr1.num_each_type[_O_index]!=xstr2.num_each_type[_anion_index]:
-                                sys.exit("Found mismatch in num_each_type, check")
-                            atoms_index_1=0
-                            for i in range(_O_index): atoms_index_1+=xstr1.num_each_type[i]
-                            if DEBUG: print("atoms_index_1="+str(atoms_index_1))
-                            if DEBUG: print("atom["+str(atoms_index_1)+"].coordF["+str(0)+"]="+str(xstr1.atoms[atoms_index_1].coordF[0]),"atom["+str(atoms_index_1)+"].coordF["+str(1)+"]="+str(xstr1.atoms[atoms_index_1].coordF[1]),"atom["+str(atoms_index_1)+"].coordF["+str(2)+"]="+str(xstr1.atoms[atoms_index_1].coordF[2]))
-                            atoms_index_2=0
-                            for i in range(_anion_index): atoms_index_2+=xstr2.num_each_type[i]
-                            if DEBUG: print("atoms_index_2="+str(atoms_index_2))
-                            if DEBUG: print("atom["+str(atoms_index_2)+"].coordF["+str(0)+"]="+str(xstr2.atoms[atoms_index_2].coordF[0]),"atom["+str(atoms_index_2)+"].coordF["+str(1)+"]="+str(xstr2.atoms[atoms_index_2].coordF[1]),"atom["+str(atoms_index_2)+"].coordF["+str(2)+"]="+str(xstr2.atoms[atoms_index_2].coordF[2]))
-                            if xstr1.atoms[atoms_index_1].coordF[0]!=xstr2.atoms[atoms_index_2].coordF[0]:
-                                sys.exit("Found mismatch in atom sites[0], check")
-                            if xstr1.atoms[atoms_index_1].coordF[1]!=xstr2.atoms[atoms_index_2].coordF[1]:
-                                sys.exit("Found mismatch in atom sites[1], check")
-                            if xstr1.atoms[atoms_index_1].coordF[2]!=xstr2.atoms[atoms_index_2].coordF[2]:
-                                sys.exit("Found mismatch in atom sites[2], check")
-                            if DEBUG: print("")
-                            if DEBUG: print("")
-                            if DEBUG: print("")
-                            if DEBUG: print("")
+                            if s in ANIONS2DECORATE:
+                                _O_index=i
+                                break
+                        if _O_index==-1:
+                            sys.exit("_O_index not found")
+                        _anion_index=-1
+                        for i,s in enumerate(xstr2.species):
+                            if s in anion:  #should be from ANIONS2SEARCH
+                                _anion_index=i
+                                break
+                        if _anion_index==-1:
+                            sys.exit("_anion_index not found")
+                        if DEBUG: print("_O_index="+str(_O_index)+", num_each_type="+str(xstr1.num_each_type[_O_index]))
+                        if DEBUG: print("_anion_index="+str(_anion_index)+", num_each_type="+str(xstr2.num_each_type[_anion_index]))
+                        if xstr1.num_each_type[_O_index]!=xstr2.num_each_type[_anion_index]:
+                            sys.exit("Found mismatch in num_each_type, check")
+                        atoms_index_1=0
+                        for i in range(_O_index): atoms_index_1+=xstr1.num_each_type[i]
+                        if DEBUG: print("atoms_index_1="+str(atoms_index_1))
+                        if DEBUG: print("atom["+str(atoms_index_1)+"].coordF["+str(0)+"]="+str(xstr1.atoms[atoms_index_1].coordF[0]),"atom["+str(atoms_index_1)+"].coordF["+str(1)+"]="+str(xstr1.atoms[atoms_index_1].coordF[1]),"atom["+str(atoms_index_1)+"].coordF["+str(2)+"]="+str(xstr1.atoms[atoms_index_1].coordF[2]))
+                        atoms_index_2=0
+                        for i in range(_anion_index): atoms_index_2+=xstr2.num_each_type[i]
+                        if DEBUG: print("atoms_index_2="+str(atoms_index_2))
+                        if DEBUG: print("atom["+str(atoms_index_2)+"].coordF["+str(0)+"]="+str(xstr2.atoms[atoms_index_2].coordF[0]),"atom["+str(atoms_index_2)+"].coordF["+str(1)+"]="+str(xstr2.atoms[atoms_index_2].coordF[1]),"atom["+str(atoms_index_2)+"].coordF["+str(2)+"]="+str(xstr2.atoms[atoms_index_2].coordF[2]))
+                        if xstr1.atoms[atoms_index_1].coordF[0]!=xstr2.atoms[atoms_index_2].coordF[0]:
+                            sys.exit("Found mismatch in atom sites[0], check")
+                        if xstr1.atoms[atoms_index_1].coordF[1]!=xstr2.atoms[atoms_index_2].coordF[1]:
+                            sys.exit("Found mismatch in atom sites[1], check")
+                        if xstr1.atoms[atoms_index_1].coordF[2]!=xstr2.atoms[atoms_index_2].coordF[2]:
+                            sys.exit("Found mismatch in atom sites[2], check")
+                        if DEBUG: print("")
+                        if DEBUG: print("")
+                        if DEBUG: print("")
+                        if DEBUG: print("")
 
                     #[WRONG THINKING]v_new=copy.deepcopy(v)
                     #[WRONG THINKING]for i,c in enumerate(v_new):
@@ -562,7 +301,7 @@ for line in lines:
                     #[WRONG THINKING]if DEBUG: print("v="+str(v),"v_new="+str(v_new))
                     #[WRONG THINKING]v_new_sorted=sorted(v_new,key=lambda x: x[1])
                     #[WRONG THINKING]if DEBUG: print("v_new_sorted="+str(v_new_sorted))
-    for proto_dec in sorted(proto_dec_set): #Prototypes that work -- aflow commands 
+    for proto_dec in sorted(proto_dec_set):
         if PERFORM_COMPARISONS:
             proto_command="if [ ! -s "+DIR_COMPARISONS+"/compare_"+proto_dec+".json ]; then mkdir -p "+DIR_COMPARISONS+"; "+AFLOW_BIN+" --proto="+proto_dec+" | "+AFLOW_BIN+" --compare2database --properties=enthalpy_formation_atom --screen_only --if DEBUG: print=json --quiet > "+DIR_COMPARISONS+"/compare_"+proto_dec+".json"+"; fi"
         else:
@@ -577,4 +316,5 @@ if PERFORM_COMPARISONS==False:
 
 with open(filename,"w") as fout:
     fout.write("\n".join(COMMANDS))
+
 
