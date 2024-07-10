@@ -42,20 +42,7 @@ for line in lines:
     print("label="+str(label),"dec="+str(dec),"compound="+str(compound),"elements="+str(elements))
     if len(elements)!=NARY: sys.exit("odd "+str(NARY)+"-nary prototype: "+label) #Print error
 
-    #[GOOD IDEA, let's be more robust]count_metals=0
-    #[GOOD IDEA, let's be more robust]for e in elements:
-    #[GOOD IDEA, let's be more robust]    if e in GROUP_METALS:
-    #[GOOD IDEA, let's be more robust]        count_metals+=1
-    #[GOOD IDEA, let's be more robust]if DEBUG: print("count_metals="+str(count_metals))
-    #[GOOD IDEA, let's be more robust]continue
-    #[GOOD IDEA, let's be more robust]sys.exit()
-    #[GOOD IDEA, let's be more robust]if count_metals!=2: continue
-    """
-    if len(ANIONS2SEARCH)>1 and NARY>2:
-        sys.exit("this functionality is not available yet")
-    if len(ANIONS2DECORATE)>1:
-        sys.exit("this functionality is not available yet")
-    """
+
     #get oxidation states for this proto+chemistry, continue if not calculable or multi-valent
     proto=label+":"+":".join(elements)  #you don't need dec here, it's always alphabetical
     if DEBUG: print(proto)
@@ -141,7 +128,6 @@ for line in lines:
             for cat_ox in cationlist:
                 if cat_ox == oldox:
                     match_ox[atomposition].append(CATIONS2DECORATE[cationindex])
-        
         for anionindex, anionlist in enumerate(oxstates_anions2dec):
             for an_ox in anionlist:
                 if an_ox == oldox:
@@ -185,123 +171,74 @@ for line in lines:
             print("remove repeated elements = ", combinations)
 
 #---Decorations
-        _decv=[]
-        dec_all=list(itertools.permutations([ chr(ord("A")+i) for i in range(NARY) ]))
-        for dec in dec_all:
-            dec_int1=[ ord(i)-65 for i in dec ]
-            dec_int2=[]
-            for il,let in enumerate(dec):
-                dec_int2.append(dec.index(chr(ord("A")+il)))  #option2, amazingly tricky
-            if(dec_int1!=dec_int2):
-                print("dec_int1="+str(dec_int1),"dec_int2="+str(dec_int2))
-            dec_int=list(dec_int2)  #the one coded in aflow
-                    #print("dec="+str(dec),"dec_int="+str(dec_int))
-            _dec_int,__oxstates_new=zip(*sorted(zip(dec_int,old_oxstates)))    #sort two lists together by first list (_dec_int), be careful: _oxstates_new is used above
-            print("__oxstates_new="+str(__oxstates_new))
-
-            if list(old_oxstates)==list(__oxstates_new):    #we get the required flipping, use this decoration (or a duplicate one that is more alphabetic)
-                print("WORKS")
-                _decv.append("".join(list(dec)))
-                #print("_decv="+str(_decv))
-        
-                #we have our decorations, but we need to find the equivalent decoration that is the most "alphabetical", use aflow
-                #decorations_AB2C_hP12_152_a_c_b-001.json
-                #label="ABC2_hR4_166_a_b_c-003"  #REMOVE ME
-            with open(DIR_DECORATIONS+"/decorations_"+label+".json","r") as fin:
-                data=json.load(fin)
-            decorations=data["atom_decorations_equivalent"]
-                #_decv=['ACB', 'BCA']
-                #decorations=[['ABC', 'BAC'], ['CAB', 'ACB'], ['BCA', 'CBA']]
-                #decorations=[['ABC', 'BAC'], ['BCA', 'ACB'], ['CAB', 'CBA']] #REMOVE ME, this should only give one dec
-            if DEBUG: print("decorations="+str(decorations))                
-            decv=set()
-            decv_dup=[]
-            for dec in _decv:
-                if DEBUG: print("dec="+str(dec))
-                for _dset in decorations:
-                    if DEBUG: print("_dset="+str(_dset))
-                    dset=sorted(_dset)
-                    if DEBUG: print("dset="+str(dset))
-                    dec_canonical=dset[0]
-                    if dec in dset:
-                        if DEBUG: print("FOUND")
-                        decv.add(dec_canonical)
-                        decv_dup.append(dec)
-            decv=list(decv)
-            if DEBUG: print("decv="+str(decv))
-            if DEBUG: print("decv_dup="+str(decv_dup))  #the duplicate is the non-alphabetic option that should best match the original proto+chemistry, keep so we can test the atom positions easily
-
-            for combo in combinations:
-                for dec in decv:
-                    _proto_dec=label+"."+"".join(dec)+":"+":".join(sorted(list(combo)))
-                    print(_proto_dec)
-                    proto_dec_set.add(_proto_dec)
-                    command1=AFLOW_BIN+" --proto="+_proto_dec
-                    print("RUN: "+command1)
-                    command2=AFLOW_BIN+" --proto="+str(label)+".ABC:"+":".join(elements_sorted)
-                    print("COMPARE TO: "+command2+"\n")
-
-
-
-
-
-
-
-
-
-                    #create all of the non-alphabetical decorations so we can test to see if we get the right atom counts and atom positions for the anion (unit test)
-                    if False:
-                        out2,err2=issue_command(command2)
-                        xstr2=structure(POSCAR_Lines=out2.splitlines())
+        for combo in combinations:
+  
+            elements_new, sorted_dec =zip(*sorted(zip(list(combo), ["A", "B", "C"])))
+            print("elements_new = ", elements_new)
+            print("sorted_dec = ", sorted_dec)
+            
+   
+            _proto_dec=label+"."+"".join(sorted_dec)+":"+":".join(elements_new)
+            print(_proto_dec)
+            proto_dec_set.add(_proto_dec)
+            command1=AFLOW_BIN+" --proto="+_proto_dec
+            print("RUN: "+command1)
+            command2=AFLOW_BIN+" --proto="+str(label)+".ABC:"+":".join(elements_sorted)
+            print("COMPARE TO: "+command2+"\n")
+    
+    
+#--TEST Protos 
+            if False:
+                out2,err2=issue_command(command2)
+                xstr2=structure(POSCAR_Lines=out2.splitlines())
                             #print(out2,err2,xstr2)
-                        for combo in combinations:
-                            for dec_dup in decv_dup:
-                                _proto_dec_dup=label+"."+"".join(dec_dup)+":"+":".join(sorted(list(combo)))
-                                command1_dup=AFLOW_BIN+" --proto="+_proto_dec_dup
+                for dec_dup in decv_dup:
+                    _proto_dec_dup=label+"."+"".join(dec_dup)+":"+":".join(elements_new)
+                    command1_dup=AFLOW_BIN+" --proto="+_proto_dec_dup
                                 #if(command1!=command1_dup): 
                                 #print("RUN(dup): "+command1_dup+"\n")
     
-                                out1,err1=issue_command(command1_dup)
-                                xstr1=structure(POSCAR_Lines=out1.splitlines())
-                                if DEBUG: print(out1) #xstr1)
-                                if DEBUG: print(out2) #xstr2)
-                                _O_index=-1
-                                for i,s in enumerate(xstr1.species):
+                    out1,err1=issue_command(command1_dup)
+                    xstr1=structure(POSCAR_Lines=out1.splitlines())
+                    if DEBUG: print(out1) #xstr1)
+                    if DEBUG: print(out2) #xstr2)
+                    _O_index=-1
+                    for i,s in enumerate(xstr1.species):
                                         #if s==anion_new: #should be from ANIONS2DECORATE #"O":
-                                    if s in ANIONS2DECORATE:
-                                        _O_index=i
-                                        break
-                                if _O_index==-1:
-                                    sys.exit("_O_index not found")
-                                _anion_index=-1
-                                for i,s in enumerate(xstr2.species):
-                                    if s in anion:  #should be from ANIONS2SEARCH
-                                        _anion_index=i
-                                        break
-                                if _anion_index==-1:
-                                    sys.exit("_anion_index not found")
-                                if DEBUG: print("_O_index="+str(_O_index)+", num_each_type="+str(xstr1.num_each_type[_O_index]))
-                                if DEBUG: print("_anion_index="+str(_anion_index)+", num_each_type="+str(xstr2.num_each_type[_anion_index]))
-                                if xstr1.num_each_type[_O_index]!=xstr2.num_each_type[_anion_index]:
-                                    sys.exit("Found mismatch in num_each_type, check")
-                                atoms_index_1=0
-                                for i in range(_O_index): atoms_index_1+=xstr1.num_each_type[i]
-                                if DEBUG: print("atoms_index_1="+str(atoms_index_1))
-                                if DEBUG: print("atom["+str(atoms_index_1)+"].coordF["+str(0)+"]="+str(xstr1.atoms[atoms_index_1].coordF[0]),"atom["+str(atoms_index_1)+"].coordF["+str(1)+"]="+str(xstr1.atoms[atoms_index_1].coordF[1]),"atom["+str(atoms_index_1)+"].coordF["+str(2)+"]="+str(xstr1.atoms[atoms_index_1].coordF[2]))
-                                atoms_index_2=0
-                                for i in range(_anion_index): atoms_index_2+=xstr2.num_each_type[i]
-                                if DEBUG: print("atoms_index_2="+str(atoms_index_2))
-                                if DEBUG: print("atom["+str(atoms_index_2)+"].coordF["+str(0)+"]="+str(xstr2.atoms[atoms_index_2].coordF[0]),"atom["+str(atoms_index_2)+"].coordF["+str(1)+"]="+str(xstr2.atoms[atoms_index_2].coordF[1]),"atom["+str(atoms_index_2)+"].coordF["+str(2)+"]="+str(xstr2.atoms[atoms_index_2].coordF[2]))
-                                if xstr1.atoms[atoms_index_1].coordF[0]!=xstr2.atoms[atoms_index_2].coordF[0]:
-                                    sys.exit("Found mismatch in atom sites[0], check")
-                                if xstr1.atoms[atoms_index_1].coordF[1]!=xstr2.atoms[atoms_index_2].coordF[1]:
-                                    sys.exit("Found mismatch in atom sites[1], check")
-                                if xstr1.atoms[atoms_index_1].coordF[2]!=xstr2.atoms[atoms_index_2].coordF[2]:
-                                    sys.exit("Found mismatch in atom sites[2], check")
-                                if DEBUG: print("")
-                                if DEBUG: print("")
-                                if DEBUG: print("")
-                                if DEBUG: print("")
+                        if s in ANIONS2DECORATE:
+                            _O_index=i
+                            break
+                    if _O_index==-1:
+                        sys.exit("_O_index not found")
+                    _anion_index=-1
+                    for i,s in enumerate(xstr2.species):
+                        if s in anion:  #should be from ANIONS2SEARCH
+                            anion_index=i
+                            break
+                    if _anion_index==-1:
+                        sys.exit("_anion_index not found")
+                    if DEBUG: print("_O_index="+str(_O_index)+", num_each_type="+str(xstr1.num_each_type[_O_index]))
+                    if DEBUG: print("_anion_index="+str(_anion_index)+", num_each_type="+str(xstr2.num_each_type[_anion_index]))
+                    if xstr1.num_each_type[_O_index]!=xstr2.num_each_type[_anion_index]:
+                        sys.exit("Found mismatch in num_each_type, check")
+                    atoms_index_1=0
+                    for i in range(_O_index): atoms_index_1+=xstr1.num_each_type[i]
+                    if DEBUG: print("atoms_index_1="+str(atoms_index_1))
+                    if DEBUG: print("atom["+str(atoms_index_1)+"].coordF["+str(0)+"]="+str(xstr1.atoms[atoms_index_1].coordF[0]),"atom["+str(atoms_index_1)+"].coordF["+str(1)+"]="+str(xstr1.atoms[atoms_index_1].coordF[1]),"atom["+str(atoms_index_1)+"].coordF["+str(2)+"]="+str(xstr1.atoms[atoms_index_1].coordF[2]))
+                    atoms_index_2=0
+                    for i in range(_anion_index): atoms_index_2+=xstr2.num_each_type[i]
+                    if DEBUG: print("atoms_index_2="+str(atoms_index_2))
+                    if DEBUG: print("atom["+str(atoms_index_2)+"].coordF["+str(0)+"]="+str(xstr2.atoms[atoms_index_2].coordF[0]),"atom["+str(atoms_index_2)+"].coordF["+str(1)+"]="+str(xstr2.atoms[atoms_index_2].coordF[1]),"atom["+str(atoms_index_2)+"].coordF["+str(2)+"]="+str(xstr2.atoms[atoms_index_2].coordF[2]))
+                    if xstr1.atoms[atoms_index_1].coordF[0]!=xstr2.atoms[atoms_index_2].coordF[0]:
+                        sys.exit("Found mismatch in atom sites[0], check")
+                    if xstr1.atoms[atoms_index_1].coordF[1]!=xstr2.atoms[atoms_index_2].coordF[1]:
+                        sys.exit("Found mismatch in atom sites[1], check")
+                    if xstr1.atoms[atoms_index_1].coordF[2]!=xstr2.atoms[atoms_index_2].coordF[2]:
+                        sys.exit("Found mismatch in atom sites[2], check")
+                    if DEBUG: print("")
+                    if DEBUG: print("")
+                    if DEBUG: print("")
+                    if DEBUG: print("")
 
     for proto_dec in sorted(proto_dec_set):
         if PERFORM_COMPARISONS:
