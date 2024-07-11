@@ -173,7 +173,7 @@ for line in lines:
 #---Decorations
         for combo in combinations:
   
-            elements_new, sorted_dec =zip(*sorted(zip(list(combo), ["A", "B", "C"])))
+            elements_new, sorted_dec =zip(*sorted(zip(list(combo), list(dec)[1:-1])))
             print("elements_new = ", elements_new)
             print("sorted_dec = ", sorted_dec)
             
