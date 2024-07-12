@@ -31,6 +31,8 @@ for line in lines:
     lparts=parts[0].split(".")
     label=lparts[0] #Prototype label
     dec=lparts[1] #Decoration elements
+    if "{" and "}" not in dec:
+        dec = "{" + dec + "}"
     compound=parts[4] #Natural compound stable 
     if "-" in compound:
         if DEBUG: print(compound)
